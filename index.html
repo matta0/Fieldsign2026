@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FieldSign">
+<meta name="theme-color" content="#5b4fcf">
+<title>FieldSign</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --brand: #5b4fcf;
+  --brand-dark: #4a3fb5;
+  --brand-light: #ede9ff;
+  --bg: #f4f3f8;
+  --surface: #fff;
+  --border: rgba(0,0,0,0.1);
+  --text: #1a1a2e;
+  --text-sub: #6b6b80;
+  --text-hint: #9999aa;
+  --r: 14px;
+  --rs: 9px;
+}
+
+html, body {
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* TOP BAR */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--brand);
+  padding-top: env(safe-area-inset-top, 0);
+}
+.topbar-inner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+.topbar-icon { width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.topbar-icon svg { width: 16px; height: 16px; fill: white; }
+.topbar h1 { font-size: 17px; font-weight: 600; color: white; }
+.topbar p { font-size: 11px; color: rgba(255,255,255,0.75); }
+
+/* BODY */
+.body {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 68px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+/* CARDS */
+.card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
+.section-tag { display: inline-flex; align-items: center; background: var(--brand-light); color: var(--brand); font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 10px; margin-bottom: 10px; }
+.card-sub { font-size: 11px; color: var(--text-sub); margin-bottom: 12px; margin-top: -6px; }
+
+/* FORM */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.row1 { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.04em; }
+.field input, .field textarea {
+  font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+  background: var(--bg); border: 1.5px solid transparent; border-radius: var(--rs);
+  padding: 10px 12px; outline: none; width: 100%; -webkit-appearance: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field textarea:focus { border-color: var(--brand); background: white; }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+::placeholder { color: var(--text-hint); }
+
+/* DIVIDER */
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* UPLOAD */
+.upload-zone { border: 2px dashed var(--border); border-radius: var(--rs); padding: 20px; text-align: center; cursor: pointer; }
+.upload-zone:active { background: var(--brand-light); }
+.upload-icon { font-size: 28px; margin-bottom: 6px; }
+.upload-zone p { font-size: 13px; font-weight: 500; color: var(--text-sub); }
+.upload-zone span { font-size: 11px; color: var(--text-hint); }
+#file-input { display: none; }
+.img-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.img-thumb { position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-thumb .rm { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: none; font-size: 11px; line-height: 18px; text-align: center; cursor: pointer; padding: 0; }
+.photo-count { font-size: 12px; color: var(--text-sub); margin-top: 8px; display: none; }
+
+/* TOGGLE */
+.toggle-row { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.ios-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; cursor: pointer; }
+.ios-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.ios-track { position: absolute; inset: 0; background: #ccc; border-radius: 13px; transition: .25s; }
+.ios-toggle input:checked ~ .ios-track { background: var(--brand); }
+.ios-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: left .25s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.ios-toggle input:checked ~ .ios-track ~ .ios-thumb { left: 21px; }
+.toggle-label { font-size: 13px; color: var(--text); line-height: 1.4; }
+
+/* STARS */
+.rating-label { font-size: 11px; font-weight: 500; color: var(--text-sub); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 8px; }
+.stars { display: flex; gap: 6px; margin-bottom: 12px; }
+.star { width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s, border-color .12s; }
+.star.on { background: var(--brand-light); border-color: var(--brand); }
+
+/* LEGAL */
+.legal { background: var(--brand-light); border-radius: var(--rs); padding: 12px; margin-bottom: 14px; font-size: 12px; color: #3a2fa0; line-height: 1.6; }
+
+/* SIGNATURE */
+.sig-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sig-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.sig-clear { font-size: 12px; color: var(--text-sub); background: none; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.sig-clear:active { background: var(--bg); }
+
+.sig-box {
+  position: relative;
+  border: 2px solid var(--brand);
+  border-radius: var(--rs);
+  background: white;
+  overflow: hidden;
+  /* CRITICAL: touch-action none here stops iOS scroll stealing */
+  touch-action: none;
+  -ms-touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sig-box canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+  cursor: crosshair;
+  /* touch-action none on canvas too */
+  touch-action: none;
+  -ms-touch-action: none;
+}
+.sig-hint-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none;
+  gap: 6px;
+}
+.sig-hint-overlay .hint-icon { font-size: 24px; opacity: 0.3; }
+.sig-hint-overlay .hint-text { font-size: 12px; color: var(--text-hint); }
+.sig-foot { font-size: 11px; color: var(--text-hint); text-align: center; margin-top: 6px; }
+
+/* BOTTOM BAR */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 10px);
+}
+.submit-btn {
+  width: 100%; padding: 15px; background: var(--brand); color: white;
+  border: none; border-radius: var(--r); font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .15s;
+}
+.submit-btn:active { background: var(--brand-dark); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  background: #1a1a2e; color: white; padding: 11px 20px; border-radius: 24px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  opacity: 0; pointer-events: none; z-index: 300;
+  transition: opacity .25s;
+}
+.toast.show { opacity: 1; }
+
+/* SUCCESS */
+.success {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: var(--brand); flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 40px 24px;
+}
+.success.show { display: flex; }
+.success-icon { font-size: 64px; margin-bottom: 20px; }
+.success h2 { font-size: 24px; font-weight: 600; color: white; margin-bottom: 10px; }
+.success p { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 28px; }
+.new-job-btn { padding: 14px 32px; background: white; color: var(--brand); border: none; border-radius: var(--r); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 20 20"><path d="M3 4h14v2H3zm0 5h14v2H3zm0 5h9v2H3z"/></svg>
+    </div>
+    <div>
+      <h1>FieldSign</h1>
+      <p>Job Completion &amp; Customer Sign-off</p>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- JOB DETAILS -->
+  <div class="card">
+    <div class="section-tag">📋 Job details</div>
+    <p class="card-sub">Fill in the job information</p>
+    <div class="row2">
+      <div class="field"><label>Engineer name</label><input type="text" id="eng-name" placeholder="John Smith"></div>
+      <div class="field"><label>Order ref</label><input type="text" id="order-ref" placeholder="ORD-12345"></div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Location</label><input type="text" id="location" placeholder="123 Main St, City"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Start date</label><input type="date" id="start-date"></div>
+      <div class="field"><label>End date</label><input type="date" id="end-date"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Time in</label><input type="time" id="time-in"></div>
+      <div class="field"><label>Time out</label><input type="time" id="time-out"></div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Job description</label><textarea id="job-desc" placeholder="Describe the work completed..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- PHOTO DOCUMENTATION -->
+  <div class="card">
+    <div class="section-tag">📷 Photo documentation</div>
+    <p class="card-sub">Upload photos of the completed work</p>
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">🖼️</div>
+      <p>Tap to add photos</p>
+      <span>Camera or photo library</span>
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)">
+    <div class="img-grid" id="img-grid"></div>
+    <p class="photo-count" id="photo-count"></p>
+  </div>
+
+  <!-- CUSTOMER INFORMATION -->
+  <div class="card">
+    <div class="section-tag">👤 Customer information</div>
+    <p class="card-sub">Customer details and signature</p>
+    <div class="row1">
+      <div class="field"><label>Customer printed name</label><input type="text" id="cust-name" placeholder="Full name"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="toggle-row">
+      <label class="ios-toggle">
+        <input type="checkbox" id="toggle-team" checked>
+        <span class="ios-track"></span>
+        <span class="ios-thumb"></span>
+      </label>
+      <span class="toggle-label">Send to services team<br><small style="color:var(--text-hint)">services@company.com</small></span>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Additional recipient (optional)</label><input type="text" id="extra-email" placeholder="partner@example.com" inputmode="email"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="row2">
+      <div class="field"><label>Contact name</label><input type="text" id="contact-name" placeholder="John Smith"></div>
+      <div class="field"><label>Telephone</label><input type="tel" id="contact-tel" placeholder="+44 20 1234 5678"></div>
+    </div>
+    <span class="rating-label">Engineer performance rating</span>
+    <div class="stars">
+      <div class="star on" data-v="1" onclick="setRating(1)">⭐</div>
+      <div class="star on" data-v="2" onclick="setRating(2)">⭐</div>
+      <div class="star on" data-v="3" onclick="setRating(3)">⭐</div>
+      <div class="star on" data-v="4" onclick="setRating(4)">⭐</div>
+      <div class="star on" data-v="5" onclick="setRating(5)">⭐</div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Customer notes</label><textarea id="cust-notes" placeholder="Additional notes, outstanding items, issues..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="card">
+    <div class="legal">The signature provided confirms that all above mentioned work has been completed in line with the SOW and this is final acceptance.</div>
+    <div class="sig-header">
+      <span class="sig-title">✍️ Customer signature</span>
+      <button class="sig-clear" onclick="clearSig()">✕ Clear</button>
+    </div>
+    <div class="sig-box" id="sig-box">
+      <canvas id="sig-canvas" width="800" height="320"></canvas>
+      <div class="sig-hint-overlay" id="sig-overlay">
+        <span class="hint-icon">✍️</span>
+        <span class="hint-text">Sign here with your finger or stylus</span>
+      </div>
+    </div>
+    <p class="sig-foot">Draw signature in the box above</p>
+  </div>
+
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom-bar">
+  <button class="submit-btn" onclick="submitForm()">📧 Submit &amp; Email Sign-off</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="success" id="success">
+  <div class="success-icon">✅</div>
+  <h2>Sign-off submitted!</h2>
+  <p>Your mail app is opening with the completed sign-off ready to send.</p>
+  <button class="new-job-btn" onclick="resetForm()">Start new job</button>
+</div>
+
+<script>
+// ── Photo handling ────────────────────────────
+var photos = [];
+
+function handleFiles(files) {
+  if (document.activeElement) document.activeElement.blur();
+  for (var i = 0; i < files.length; i++) {
+    (function(f) {
+      if (!f.type.match('image.*')) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        photos.push({ name: f.name, data: e.target.result });
+        renderPhotos();
+      };
+      reader.readAsDataURL(f);
+    })(files[i]);
+  }
+  document.getElementById('file-input').value = '';
+}
+
+function renderPhotos() {
+  var grid = document.getElementById('img-grid');
+  var count = document.getElementById('photo-count');
+  grid.innerHTML = '';
+  for (var i = 0; i < photos.length; i++) {
+    grid.innerHTML += '<div class="img-thumb"><img src="' + photos[i].data + '"><button class="rm" onclick="removePhoto(' + i + ')">✕</button></div>';
+  }
+  if (photos.length > 0) {
+    count.style.display = 'block';
+    count.textContent = photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ' added';
+  } else {
+    count.style.display = 'none';
+  }
+}
+
+function removePhoto(i) {
+  photos.splice(i, 1);
+  renderPhotos();
+}
+
+// ── Star rating ───────────────────────────────
+var rating = 5;
+
+function setRating(v) {
+  rating = v;
+  var stars = document.querySelectorAll('.star');
+  for (var i = 0; i < stars.length; i++) {
+    stars[i].classList.toggle('on', (i + 1) <= v);
+  }
+}
+
+// ── Signature ─────────────────────────────────
+var sigCanvas = document.getElementById('sig-canvas');
+var sigCtx = sigCanvas.getContext('2d');
+var isDrawing = false;
+var lastX = 0;
+var lastY = 0;
+var hasSig = false;
+
+sigCtx.strokeStyle = '#1a1a2e';
+sigCtx.lineWidth = 2.5;
+sigCtx.lineCap = 'round';
+sigCtx.lineJoin = 'round';
+
+function getSigPos(e) {
+  var rect = sigCanvas.getBoundingClientRect();
+  var scaleX = sigCanvas.width / rect.width;
+  var scaleY = sigCanvas.height / rect.height;
+  var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  isDrawing = true;
+  var pos = getSigPos(e);
+  lastX = pos.x;
+  lastY = pos.y;
+  if (!hasSig) {
+    hasSig = true;
+    document.getElementById('sig-overlay').style.display = 'none';
+  }
+}
+
+function moveDraw(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  var pos = getSigPos(e);
+  sigCtx.beginPath();
+  sigCtx.moveTo(lastX, lastY);
+  sigCtx.lineTo(pos.x, pos.y);
+  sigCtx.stroke();
+  lastX = pos.x;
+  lastY = pos.y;
+}
+
+function endDraw(e) {
+  if (e) e.preventDefault();
+  isDrawing = false;
+}
+
+// Mouse events
+sigCanvas.addEventListener('mousedown', startDraw);
+sigCanvas.addEventListener('mousemove', moveDraw);
+sigCanvas.addEventListener('mouseup', endDraw);
+sigCanvas.addEventListener('mouseleave', endDraw);
+
+// Touch events — all with passive:false so preventDefault works
+sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+sigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+sigCanvas.addEventListener('touchend', endDraw, { passive: false });
+sigCanvas.addEventListener('touchcancel', endDraw, { passive: false });
+
+function clearSig() {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  hasSig = false;
+  document.getElementById('sig-overlay').style.display = 'flex';
+}
+
+// ── Toast ─────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+// ── Submit ────────────────────────────────────
+function submitForm() {
+  var engName  = document.getElementById('eng-name').value.trim();
+  var orderRef = document.getElementById('order-ref').value.trim();
+  var custName = document.getElementById('cust-name').value.trim();
+
+  if (!engName)  { showToast('⚠️ Please enter the engineer name'); return; }
+  if (!orderRef) { showToast('⚠️ Please enter the order ref'); return; }
+  if (!custName) { showToast('⚠️ Please enter the customer name'); return; }
+  if (!hasSig)   { showToast('⚠️ Customer signature is required'); return; }
+
+  var loc         = document.getElementById('location').value     || 'Not specified';
+  var startDate   = document.getElementById('start-date').value   || '-';
+  var endDate     = document.getElementById('end-date').value     || '-';
+  var timeIn      = document.getElementById('time-in').value      || '-';
+  var timeOut     = document.getElementById('time-out').value     || '-';
+  var jobDesc     = document.getElementById('job-desc').value     || 'No description provided';
+  var contactName = document.getElementById('contact-name').value || '-';
+  var contactTel  = document.getElementById('contact-tel').value  || '-';
+  var notes       = document.getElementById('cust-notes').value   || 'None';
+  var sendTeam    = document.getElementById('toggle-team').checked;
+  var extraEmail  = document.getElementById('extra-email').value.trim();
+
+  var today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  var stars = '';
+  for (var s = 0; s < rating; s++) stars += '\u2605';
+  for (var s = rating; s < 5; s++) stars += '\u2606';
+
+  var photoLine = photos.length > 0
+    ? photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ' taken on site \u2014 please attach from device before sending'
+    : 'No photos taken';
+
+  var body = [
+    'FIELDSIGN \u2014 JOB COMPLETION SIGN-OFF',
+    today,
+    '',
+    '________________________________________',
+    '  JOB DETAILS',
+    '________________________________________',
+    '',
+    '  Engineer Name     ' + engName,
+    '  Order Ref         ' + orderRef,
+    '  Location          ' + loc,
+    '',
+    '  Start Date        ' + startDate,
+    '  End Date          ' + endDate,
+    '  Time In           ' + timeIn,
+    '  Time Out          ' + timeOut,
+    '',
+    '  Job Description',
+  ].concat(jobDesc.split('\n').map(function(l) { return '  ' + l; })).concat([
+    '',
+    '________________________________________',
+    '  PHOTO DOCUMENTATION',
+    '________________________________________',
+    '',
+    '  ' + photoLine,
+    '',
+    '________________________________________',
+    '  CUSTOMER INFORMATION',
+    '________________________________________',
+    '',
+    '  Customer Name     ' + custName,
+    '  Contact Name      ' + contactName,
+    '  Telephone         ' + contactTel,
+    '',
+    '  Engineer Rating   ' + stars + ' (' + rating + ' / 5)',
+    '',
+    '  Customer Notes',
+  ]).concat(notes.split('\n').map(function(l) { return '  ' + l; })).concat([
+    '',
+    '________________________________________',
+    '  CUSTOMER SIGNATURE',
+    '________________________________________',
+    '',
+    '  The signature provided confirms that all above mentioned',
+    '  work has been completed in line with the SOW and this',
+    '  is final acceptance.',
+    '',
+    '  Signed by:  ' + custName,
+    '  Date:       ' + today,
+    '  Method:     Digital signature captured on device',
+    '',
+    '________________________________________',
+    '  Generated by FieldSign  |  ' + today,
+    '________________________________________',
+  ]);
+
+  var to = [];
+  if (sendTeam) to.push('services@company.com');
+  if (extraEmail) to.push(extraEmail);
+  if (!to.length) to.push('services@company.com');
+
+  var subject = encodeURIComponent('Job Sign-off: ' + orderRef + ' | ' + custName + ' | ' + today);
+  var bodyEnc = encodeURIComponent(body.join('\n'));
+  var mailto  = 'mailto:' + to.join(',') + '?subject=' + subject + '&body=' + bodyEnc;
+
+  document.getElementById('success').classList.add('show');
+  setTimeout(function() { window.location.href = mailto; }, 600);
+}
+
+// ── Reset ─────────────────────────────────────
+function resetForm() {
+  document.getElementById('success').classList.remove('show');
+  var fields = ['eng-name','order-ref','location','start-date','end-date',
+                'time-in','time-out','job-desc','cust-name','extra-email',
+                'contact-name','contact-tel','cust-notes'];
+  for (var i = 0; i < fields.length; i++) {
+    document.getElementById(fields[i]).value = '';
+  }
+  photos = [];
+  renderPhotos();
+  clearSig();
+  setRating(5);
+  document.getElementById('toggle-team').checked = true;
+  window.scrollTo(0, 0);
+}
+
+// ── Set today's date ──────────────────────────
+var todayISO = new Date().toISOString().split('T')[0];
+document.getElementById('start-date').value = todayISO;
+document.getElementById('end-date').value   = todayISO;
+</script>
+</body>
+</html>
