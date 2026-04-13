@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FieldSign">
+<meta name="theme-color" content="#5b4fcf">
+<title>FieldSign</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --brand: #5b4fcf; --brand-dark: #4a3fb5; --brand-light: #ede9ff;
+  --bg: #f4f3f8; --surface: #fff; --border: rgba(0,0,0,0.1);
+  --text: #1a1a2e; --text-sub: #6b6b80; --text-hint: #9999aa;
+  --r: 14px; --rs: 9px;
+}
+html, body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--brand); padding-top: env(safe-area-inset-top, 0); }
+.topbar-inner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+.topbar-icon { width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.topbar-icon svg { width: 16px; height: 16px; fill: white; }
+.topbar h1 { font-size: 17px; font-weight: 600; color: white; }
+.topbar p { font-size: 11px; color: rgba(255,255,255,0.75); }
+.body { padding-top: calc(env(safe-area-inset-top, 0px) + 68px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); padding-left: 14px; padding-right: 14px; }
+.card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
+.section-tag { display: inline-flex; align-items: center; background: var(--brand-light); color: var(--brand); font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 10px; margin-bottom: 10px; }
+.card-sub { font-size: 11px; color: var(--text-sub); margin-bottom: 12px; margin-top: -6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.row1 { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.04em; }
+.field input, .field textarea { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); border: 1.5px solid transparent; border-radius: var(--rs); padding: 10px 12px; outline: none; width: 100%; -webkit-appearance: none; transition: border-color .15s; }
+.field input:focus, .field textarea:focus { border-color: var(--brand); background: white; }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+::placeholder { color: var(--text-hint); }
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+.upload-zone { border: 2px dashed var(--border); border-radius: var(--rs); padding: 20px; text-align: center; cursor: pointer; }
+.upload-zone:active { background: var(--brand-light); }
+.upload-icon { font-size: 28px; margin-bottom: 6px; }
+.upload-zone p { font-size: 13px; font-weight: 500; color: var(--text-sub); }
+.upload-zone span { font-size: 11px; color: var(--text-hint); }
+#file-input { display: none; }
+.img-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.img-thumb { position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-thumb .rm { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: none; font-size: 11px; line-height: 18px; text-align: center; cursor: pointer; padding: 0; }
+.photo-count { font-size: 12px; color: var(--text-sub); margin-top: 8px; display: none; }
+.toggle-row { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.ios-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; cursor: pointer; }
+.ios-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.ios-track { position: absolute; inset: 0; background: #ccc; border-radius: 13px; transition: .25s; }
+.ios-toggle input:checked ~ .ios-track { background: var(--brand); }
+.ios-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: left .25s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.ios-toggle input:checked ~ .ios-track ~ .ios-thumb { left: 21px; }
+.toggle-label { font-size: 13px; color: var(--text); line-height: 1.4; }
+.rating-label { font-size: 11px; font-weight: 500; color: var(--text-sub); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 8px; }
+.stars { display: flex; gap: 6px; margin-bottom: 12px; }
+.star { width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s, border-color .12s; }
+.star.on { background: var(--brand-light); border-color: var(--brand); }
+.legal { background: var(--brand-light); border-radius: var(--rs); padding: 12px; margin-bottom: 14px; font-size: 12px; color: #3a2fa0; line-height: 1.6; }
+.sig-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sig-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.sig-clear { font-size: 12px; color: var(--text-sub); background: none; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.sig-clear:active { background: var(--bg); }
+.sig-box { position: relative; border: 2px solid var(--brand); border-radius: var(--rs); background: white; overflow: hidden; touch-action: none; -ms-touch-action: none; user-select: none; -webkit-user-select: none; }
+.sig-box canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; -ms-touch-action: none; }
+.sig-hint-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; gap: 6px; }
+.sig-hint-overlay .hint-icon { font-size: 24px; opacity: 0.3; }
+.sig-hint-overlay .hint-text { font-size: 12px; color: var(--text-hint); }
+.sig-foot { font-size: 11px; color: var(--text-hint); text-align: center; margin-top: 6px; }
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 14px; padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 10px); }
+.submit-btn { width: 100%; padding: 15px; background: var(--brand); color: white; border: none; border-radius: var(--r); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
+.submit-btn:active { background: var(--brand-dark); }
+.submit-btn:disabled { background: #9999cc; cursor: not-allowed; }
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: white; padding: 11px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; white-space: nowrap; opacity: 0; pointer-events: none; z-index: 300; transition: opacity .25s; }
+.toast.show { opacity: 1; }
+.success { display: none; position: fixed; inset: 0; z-index: 400; background: var(--brand); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+.success.show { display: flex; }
+.success-icon { font-size: 64px; margin-bottom: 20px; }
+.success h2 { font-size: 24px; font-weight: 600; color: white; margin-bottom: 10px; }
+.success p { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 28px; }
+.new-job-btn { padding: 14px 32px; background: white; color: var(--brand); border: none; border-radius: var(--r); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 20 20"><path d="M3 4h14v2H3zm0 5h14v2H3zm0 5h9v2H3z"/></svg>
+    </div>
+    <div>
+      <h1>FieldSign</h1>
+      <p>Job Completion &amp; Customer Sign-off</p>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <div class="card">
+    <div class="section-tag">📋 Job details</div>
+    <p class="card-sub">Fill in the job information</p>
+    <div class="row2">
+      <div class="field"><label>Engineer name</label><input type="text" id="eng-name" placeholder="John Smith"></div>
+      <div class="field"><label>Order ref</label><input type="text" id="order-ref" placeholder="ORD-12345"></div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Location</label><input type="text" id="location" placeholder="123 Main St, City"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Start date</label><input type="date" id="start-date"></div>
+      <div class="field"><label>End date</label><input type="date" id="end-date"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Time in</label><input type="time" id="time-in"></div>
+      <div class="field"><label>Time out</label><input type="time" id="time-out"></div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Job description</label><textarea id="job-desc" placeholder="Describe the work completed..."></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-tag">📷 Photo documentation</div>
+    <p class="card-sub">Upload photos of the completed work</p>
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">🖼️</div>
+      <p>Tap to add photos</p>
+      <span>Camera or photo library</span>
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)">
+    <div class="img-grid" id="img-grid"></div>
+    <p class="photo-count" id="photo-count"></p>
+  </div>
+
+  <div class="card">
+    <div class="section-tag">👤 Customer information</div>
+    <p class="card-sub">Customer details and signature</p>
+    <div class="row1">
+      <div class="field"><label>Customer printed name</label><input type="text" id="cust-name" placeholder="Full name"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="toggle-row">
+      <label class="ios-toggle">
+        <input type="checkbox" id="toggle-team" checked>
+        <span class="ios-track"></span>
+        <span class="ios-thumb"></span>
+      </label>
+      <span class="toggle-label">Send to services team<br><small style="color:var(--text-hint)">services@company.com</small></span>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Additional recipient (optional)</label><input type="text" id="extra-email" placeholder="partner@example.com" inputmode="email"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="row2">
+      <div class="field"><label>Contact name</label><input type="text" id="contact-name" placeholder="John Smith"></div>
+      <div class="field"><label>Telephone</label><input type="tel" id="contact-tel" placeholder="+44 20 1234 5678"></div>
+    </div>
+    <span class="rating-label">Engineer performance rating</span>
+    <div class="stars">
+      <div class="star on" data-v="1" onclick="setRating(1)">⭐</div>
+      <div class="star on" data-v="2" onclick="setRating(2)">⭐</div>
+      <div class="star on" data-v="3" onclick="setRating(3)">⭐</div>
+      <div class="star on" data-v="4" onclick="setRating(4)">⭐</div>
+      <div class="star on" data-v="5" onclick="setRating(5)">⭐</div>
+    </div>
+    <div class="row1">
+      <div class="field"><label>Customer notes</label><textarea id="cust-notes" placeholder="Additional notes, outstanding items, issues..."></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="legal">The signature provided confirms that all above mentioned work has been completed in line with the SOW and this is final acceptance.</div>
+    <div class="sig-header">
+      <span class="sig-title">✍️ Customer signature</span>
+      <button class="sig-clear" onclick="clearSig()">✕ Clear</button>
+    </div>
+    <div class="sig-box" id="sig-box">
+      <canvas id="sig-canvas" width="800" height="320"></canvas>
+      <div class="sig-hint-overlay" id="sig-overlay">
+        <span class="hint-icon">✍️</span>
+        <span class="hint-text">Sign here with your finger or stylus</span>
+      </div>
+    </div>
+    <p class="sig-foot">Draw signature in the box above</p>
+  </div>
+
+</div>
+
+<div class="bottom-bar">
+  <button class="submit-btn" id="submit-btn" onclick="submitForm()">📧 Submit &amp; Send PDF</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="success" id="success">
+  <div class="success-icon">✅</div>
+  <h2>Sign-off sent!</h2>
+  <p>The formatted PDF has been emailed to your services team.</p>
+  <button class="new-job-btn" onclick="resetForm()">Start new job</button>
+</div>
+
+<script>
+// ── EmailJS init ──────────────────────────────
+emailjs.init('Dif18w8_qsjVYZhVq');
+
+var EMAILJS_SERVICE  = 'service_7yrh0t7';
+var EMAILJS_TEMPLATE = 'template_qwu06qq';
+var SERVICES_EMAIL   = 'services@company.com';
+
+// ── Photos ────────────────────────────────────
+var photos = [];
+
+function handleFiles(files) {
+  if (document.activeElement) document.activeElement.blur();
+  for (var i = 0; i < files.length; i++) {
+    (function(f) {
+      if (!f.type.match('image.*')) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        // Compress image to thumbnail for PDF
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var MAX = 400;
+          var ratio = Math.min(MAX / img.width, MAX / img.height);
+          canvas.width  = img.width  * ratio;
+          canvas.height = img.height * ratio;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          photos.push({ name: f.name, data: canvas.toDataURL('image/jpeg', 0.7) });
+          renderPhotos();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(f);
+    })(files[i]);
+  }
+  document.getElementById('file-input').value = '';
+}
+
+function renderPhotos() {
+  var grid  = document.getElementById('img-grid');
+  var count = document.getElementById('photo-count');
+  grid.innerHTML = '';
+  for (var i = 0; i < photos.length; i++) {
+    grid.innerHTML += '<div class="img-thumb"><img src="' + photos[i].data + '"><button class="rm" onclick="removePhoto(' + i + ')">✕</button></div>';
+  }
+  if (photos.length > 0) {
+    count.style.display = 'block';
+    count.textContent = photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ' added';
+  } else {
+    count.style.display = 'none';
+  }
+}
+
+function removePhoto(i) { photos.splice(i, 1); renderPhotos(); }
+
+// ── Stars ─────────────────────────────────────
+var rating = 5;
+function setRating(v) {
+  rating = v;
+  var stars = document.querySelectorAll('.star');
+  for (var i = 0; i < stars.length; i++) {
+    stars[i].classList.toggle('on', (i + 1) <= v);
+  }
+}
+
+// ── Signature ─────────────────────────────────
+var sigCanvas  = document.getElementById('sig-canvas');
+var sigCtx     = sigCanvas.getContext('2d');
+var isDrawing  = false;
+var lastX = 0, lastY = 0, hasSig = false;
+
+sigCtx.strokeStyle = '#1a1a2e';
+sigCtx.lineWidth   = 2.5;
+sigCtx.lineCap     = 'round';
+sigCtx.lineJoin    = 'round';
+
+function getSigPos(e) {
+  var rect   = sigCanvas.getBoundingClientRect();
+  var scaleX = sigCanvas.width  / rect.width;
+  var scaleY = sigCanvas.height / rect.height;
+  var cx = e.touches ? e.touches[0].clientX : e.clientX;
+  var cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (cx - rect.left) * scaleX, y: (cy - rect.top) * scaleY };
+}
+function startDraw(e) {
+  e.preventDefault();
+  isDrawing = true;
+  var p = getSigPos(e); lastX = p.x; lastY = p.y;
+  if (!hasSig) { hasSig = true; document.getElementById('sig-overlay').style.display = 'none'; }
+}
+function moveDraw(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  var p = getSigPos(e);
+  sigCtx.beginPath(); sigCtx.moveTo(lastX, lastY); sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+  lastX = p.x; lastY = p.y;
+}
+function endDraw(e) { if (e) e.preventDefault(); isDrawing = false; }
+
+sigCanvas.addEventListener('mousedown',  startDraw);
+sigCanvas.addEventListener('mousemove',  moveDraw);
+sigCanvas.addEventListener('mouseup',    endDraw);
+sigCanvas.addEventListener('mouseleave', endDraw);
+sigCanvas.addEventListener('touchstart',  startDraw,  { passive: false });
+sigCanvas.addEventListener('touchmove',   moveDraw,   { passive: false });
+sigCanvas.addEventListener('touchend',    endDraw,    { passive: false });
+sigCanvas.addEventListener('touchcancel', endDraw,    { passive: false });
+
+function clearSig() {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  hasSig = false;
+  document.getElementById('sig-overlay').style.display = 'flex';
+}
+
+// ── Toast ─────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+// ── PDF Builder ───────────────────────────────
+function buildPDF(data) {
+  var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  var pw  = 210; // page width mm
+  var ph  = 297; // page height mm
+  var ml  = 15;  // margin left
+  var mr  = 15;  // margin right
+  var cw  = pw - ml - mr; // content width
+  var y   = 15;
+
+  // Brand colour helpers
+  var BRAND  = [91, 79, 207];
+  var LIGHT  = [237, 233, 255];
+  var DARK   = [26, 26, 46];
+  var GREY   = [107, 107, 128];
+  var LGREY  = [244, 243, 248];
+  var WHITE  = [255, 255, 255];
+  var LINE   = [220, 218, 230];
+
+  function checkPage(needed) {
+    if (y + needed > ph - 15) { doc.addPage(); y = 15; }
+  }
+
+  function sectionHeader(title) {
+    checkPage(12);
+    doc.setFillColor(BRAND[0], BRAND[1], BRAND[2]);
+    doc.roundedRect(ml, y, cw, 8, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, ml + 4, y + 5.5);
+    y += 12;
+  }
+
+  function labelValue(label, value, x, colW) {
+    doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label.toUpperCase(), x, y);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    var lines = doc.splitTextToSize(value || '-', colW - 4);
+    doc.text(lines, x, y + 4);
+    return lines.length * 4 + 2;
+  }
+
+  function row2(l1, v1, l2, v2) {
+    checkPage(16);
+    var h1 = labelValue(l1, v1, ml,          cw / 2 - 4);
+    var h2 = labelValue(l2, v2, ml + cw / 2, cw / 2 - 4);
+    y += Math.max(h1, h2) + 6;
+  }
+
+  function row1(label, value) {
+    checkPage(16);
+    var h = labelValue(label, value, ml, cw);
+    y += h + 6;
+  }
+
+  function row1Block(label, value) {
+    checkPage(20);
+    doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label.toUpperCase(), ml, y);
+    y += 4;
+    var lines = doc.splitTextToSize(value || '-', cw - 6);
+    var bh = lines.length * 4.5 + 4;
+    checkPage(bh + 4);
+    doc.setFillColor(LGREY[0], LGREY[1], LGREY[2]);
+    doc.roundedRect(ml, y, cw, bh, 2, 2, 'F');
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(lines, ml + 3, y + 4.5);
+    y += bh + 6;
+  }
+
+  function divider() {
+    checkPage(6);
+    doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
+    doc.setLineWidth(0.3);
+    doc.line(ml, y, ml + cw, y);
+    y += 5;
+  }
+
+  // ── HEADER ──
+  doc.setFillColor(BRAND[0], BRAND[1], BRAND[2]);
+  doc.rect(0, 0, pw, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FieldSign', ml, 10);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Job Completion & Customer Sign-off', ml, 15.5);
+  doc.setFontSize(8);
+  doc.text(data.today, pw - mr, 10, { align: 'right' });
+  doc.text('Ref: ' + data.orderRef, pw - mr, 15.5, { align: 'right' });
+  y = 28;
+
+  // ── JOB DETAILS ──
+  sectionHeader('  JOB DETAILS');
+  row2('Engineer Name', data.engName, 'Order Ref', data.orderRef);
+  row1('Location', data.loc);
+  row2('Start Date', data.startDate, 'End Date', data.endDate);
+  row2('Time In', data.timeIn, 'Time Out', data.timeOut);
+  row1Block('Job Description', data.jobDesc);
+  divider();
+
+  // ── PHOTO DOCUMENTATION ──
+  sectionHeader('  PHOTO DOCUMENTATION');
+  if (data.photos.length === 0) {
+    checkPage(10);
+    doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('No photos uploaded', ml, y);
+    y += 10;
+  } else {
+    var thumbW = 42;
+    var thumbH = 32;
+    var gap    = 4;
+    var perRow = Math.floor(cw / (thumbW + gap));
+    checkPage(thumbH + 10);
+    for (var pi = 0; pi < data.photos.length; pi++) {
+      var col = pi % perRow;
+      if (col === 0 && pi !== 0) { y += thumbH + gap; checkPage(thumbH + 10); }
+      var px = ml + col * (thumbW + gap);
+      try {
+        doc.addImage(data.photos[pi].data, 'JPEG', px, y, thumbW, thumbH, '', 'FAST');
+        // border
+        doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
+        doc.setLineWidth(0.3);
+        doc.rect(px, y, thumbW, thumbH);
+      } catch(e) {}
+    }
+    y += thumbH + 8;
+    doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.setFontSize(7);
+    doc.text(data.photos.length + ' photo' + (data.photos.length > 1 ? 's' : '') + ' captured on site', ml, y);
+    y += 8;
+  }
+  divider();
+
+  // ── CUSTOMER INFORMATION ──
+  sectionHeader('  CUSTOMER INFORMATION');
+  row2('Customer Name', data.custName, 'Engineer Rating', data.stars + '  (' + data.rating + '/5)');
+  row2('Contact Name', data.contactName, 'Telephone', data.contactTel);
+  row1Block('Customer Notes', data.notes);
+  divider();
+
+  // ── SIGNATURE ──
+  sectionHeader('  CUSTOMER SIGNATURE');
+
+  // Legal box
+  checkPage(18);
+  doc.setFillColor(LIGHT[0], LIGHT[1], LIGHT[2]);
+  doc.roundedRect(ml, y, cw, 12, 2, 2, 'F');
+  doc.setTextColor(58, 47, 160);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  var legalLines = doc.splitTextToSize('The signature provided confirms that all above mentioned work has been completed in line with the SOW and this is final acceptance.', cw - 6);
+  doc.text(legalLines, ml + 3, y + 4.5);
+  y += 16;
+
+  // Signature image
+  checkPage(35);
+  doc.setDrawColor(BRAND[0], BRAND[1], BRAND[2]);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(ml, y, cw, 30, 2, 2);
+  try {
+    var sigData = data.sigData;
+    doc.addImage(sigData, 'PNG', ml + 2, y + 2, cw - 4, 26, '', 'FAST');
+  } catch(e) {}
+  y += 34;
+
+  doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+  doc.setFontSize(8);
+  doc.text('Signed by: ' + data.custName + '   |   Date: ' + data.today + '   |   Captured digitally via FieldSign', ml, y);
+  y += 10;
+
+  // ── FOOTER ──
+  var totalPages = doc.internal.getNumberOfPages();
+  for (var pg = 1; pg <= totalPages; pg++) {
+    doc.setPage(pg);
+    doc.setFillColor(BRAND[0], BRAND[1], BRAND[2]);
+    doc.rect(0, ph - 8, pw, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.text('Generated by FieldSign  |  ' + data.today + '  |  Page ' + pg + ' of ' + totalPages, pw / 2, ph - 3, { align: 'center' });
+  }
+
+  return doc;
+}
+
+// ── Submit ────────────────────────────────────
+function submitForm() {
+  var engName  = document.getElementById('eng-name').value.trim();
+  var orderRef = document.getElementById('order-ref').value.trim();
+  var custName = document.getElementById('cust-name').value.trim();
+
+  if (!engName)  { showToast('⚠️ Please enter the engineer name'); return; }
+  if (!orderRef) { showToast('⚠️ Please enter the order ref'); return; }
+  if (!custName) { showToast('⚠️ Please enter the customer name'); return; }
+  if (!hasSig)   { showToast('⚠️ Customer signature is required'); return; }
+
+  var loc         = document.getElementById('location').value     || 'Not specified';
+  var startDate   = document.getElementById('start-date').value   || '-';
+  var endDate     = document.getElementById('end-date').value     || '-';
+  var timeIn      = document.getElementById('time-in').value      || '-';
+  var timeOut     = document.getElementById('time-out').value     || '-';
+  var jobDesc     = document.getElementById('job-desc').value     || 'No description provided';
+  var contactName = document.getElementById('contact-name').value || '-';
+  var contactTel  = document.getElementById('contact-tel').value  || '-';
+  var notes       = document.getElementById('cust-notes').value   || 'None';
+  var sendTeam    = document.getElementById('toggle-team').checked;
+  var extraEmail  = document.getElementById('extra-email').value.trim();
+  var today       = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  var stars       = '';
+  for (var s = 0; s < rating; s++) stars += '\u2605';
+  for (var s = rating; s < 5; s++) stars += '\u2606';
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating PDF...';
+
+  // Build PDF
+  var pdfData = {
+    engName: engName, orderRef: orderRef, custName: custName,
+    loc: loc, startDate: startDate, endDate: endDate,
+    timeIn: timeIn, timeOut: timeOut, jobDesc: jobDesc,
+    contactName: contactName, contactTel: contactTel,
+    notes: notes, rating: rating, stars: stars,
+    photos: photos, today: today,
+    sigData: sigCanvas.toDataURL('image/png')
+  };
+
+  var doc;
+  try {
+    doc = buildPDF(pdfData);
+  } catch(e) {
+    showToast('⚠️ PDF generation failed. Please try again.');
+    btn.disabled = false; btn.textContent = '📧 Submit & Send PDF';
+    return;
+  }
+
+  var pdfBase64 = doc.output('datauristring');
+  // Strip the data URI prefix — EmailJS needs raw base64
+  var b64 = pdfBase64.split(',')[1];
+
+  // Build recipient list
+  var toList = [];
+  if (sendTeam) toList.push(SERVICES_EMAIL);
+  if (extraEmail) toList.push(extraEmail);
+  if (!toList.length) toList.push(SERVICES_EMAIL);
+
+  var subject = 'Job Sign-off: ' + orderRef + ' | ' + custName + ' | ' + today;
+
+  btn.textContent = '📤 Sending...';
+
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    to_email:   toList.join(','),
+    subject:    subject,
+    message:    'Please find the FieldSign job completion sign-off PDF attached.\n\nEngineer: ' + engName + '\nOrder Ref: ' + orderRef + '\nCustomer: ' + custName + '\nDate: ' + today + '\nLocation: ' + loc,
+    attachment: b64,
+    filename:   'FieldSign-' + orderRef + '-' + today.replace(/ /g,'-') + '.pdf'
+  }).then(function() {
+    document.getElementById('success').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '📧 Submit & Send PDF';
+  }, function(err) {
+    console.error('EmailJS error:', err);
+    showToast('⚠️ Email failed: ' + (err.text || 'Please try again'));
+    btn.disabled = false;
+    btn.textContent = '📧 Submit & Send PDF';
+  });
+}
+
+// ── Reset ─────────────────────────────────────
+function resetForm() {
+  document.getElementById('success').classList.remove('show');
+  var fields = ['eng-name','order-ref','location','start-date','end-date',
+                'time-in','time-out','job-desc','cust-name','extra-email',
+                'contact-name','contact-tel','cust-notes'];
+  for (var i = 0; i < fields.length; i++) document.getElementById(fields[i]).value = '';
+  photos = [];
+  renderPhotos();
+  clearSig();
+  setRating(5);
+  document.getElementById('toggle-team').checked = true;
+  window.scrollTo(0, 0);
+}
+
+// ── Defaults ──────────────────────────────────
+var todayISO = new Date().toISOString().split('T')[0];
+document.getElementById('start-date').value = todayISO;
+document.getElementById('end-date').value   = todayISO;
+</script>
+</body>
+</html>
